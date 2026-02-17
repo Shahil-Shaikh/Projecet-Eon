@@ -1,0 +1,34 @@
+[0.566s] Invoking command in '/home/shahil/Documents/Project_Eon/src/my_robot_main': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com LANG=en_US.UTF-8 PYTHONPATH=/home/shahil/Documents/Project_Eon/build/my_robot_main/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/shahil/Documents/Project_Eon/install/my_robot_main/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/my_robot_main build --build-base /home/shahil/Documents/Project_Eon/build/my_robot_main/build install --record /home/shahil/Documents/Project_Eon/build/my_robot_main/install.log --single-version-externally-managed install_data
+[0.685s] running egg_info
+[0.685s] creating ../../build/my_robot_main/my_robot_main.egg-info
+[0.692s] writing ../../build/my_robot_main/my_robot_main.egg-info/PKG-INFO
+[0.693s] writing dependency_links to ../../build/my_robot_main/my_robot_main.egg-info/dependency_links.txt
+[0.693s] writing requirements to ../../build/my_robot_main/my_robot_main.egg-info/requires.txt
+[0.693s] writing top-level names to ../../build/my_robot_main/my_robot_main.egg-info/top_level.txt
+[0.693s] writing manifest file '../../build/my_robot_main/my_robot_main.egg-info/SOURCES.txt'
+[0.709s] reading manifest file '../../build/my_robot_main/my_robot_main.egg-info/SOURCES.txt'
+[0.709s] writing manifest file '../../build/my_robot_main/my_robot_main.egg-info/SOURCES.txt'
+[0.709s] running build
+[0.709s] running build_py
+[0.709s] creating /home/shahil/Documents/Project_Eon/build/my_robot_main/build
+[0.709s] creating /home/shahil/Documents/Project_Eon/build/my_robot_main/build/lib
+[0.709s] creating /home/shahil/Documents/Project_Eon/build/my_robot_main/build/lib/my_robot_main
+[0.709s] copying my_robot_main/__init__.py -> /home/shahil/Documents/Project_Eon/build/my_robot_main/build/lib/my_robot_main
+[0.709s] copying my_robot_main/py.typed -> /home/shahil/Documents/Project_Eon/build/my_robot_main/build/lib/my_robot_main
+[0.709s] running install
+[0.713s] running install_lib
+[0.721s] creating /home/shahil/Documents/Project_Eon/install/my_robot_main/lib/python3.12/site-packages/my_robot_main
+[0.721s] copying /home/shahil/Documents/Project_Eon/build/my_robot_main/build/lib/my_robot_main/__init__.py -> /home/shahil/Documents/Project_Eon/install/my_robot_main/lib/python3.12/site-packages/my_robot_main
+[0.721s] copying /home/shahil/Documents/Project_Eon/build/my_robot_main/build/lib/my_robot_main/py.typed -> /home/shahil/Documents/Project_Eon/install/my_robot_main/lib/python3.12/site-packages/my_robot_main
+[0.721s] byte-compiling /home/shahil/Documents/Project_Eon/install/my_robot_main/lib/python3.12/site-packages/my_robot_main/__init__.py to __init__.cpython-312.pyc
+[0.721s] running install_data
+[0.721s] creating /home/shahil/Documents/Project_Eon/install/my_robot_main/share/ament_index
+[0.721s] creating /home/shahil/Documents/Project_Eon/install/my_robot_main/share/ament_index/resource_index
+[0.721s] creating /home/shahil/Documents/Project_Eon/install/my_robot_main/share/ament_index/resource_index/packages
+[0.721s] copying resource/my_robot_main -> /home/shahil/Documents/Project_Eon/install/my_robot_main/share/ament_index/resource_index/packages
+[0.721s] copying package.xml -> /home/shahil/Documents/Project_Eon/install/my_robot_main/share/my_robot_main
+[0.721s] running install_egg_info
+[0.730s] Copying ../../build/my_robot_main/my_robot_main.egg-info to /home/shahil/Documents/Project_Eon/install/my_robot_main/lib/python3.12/site-packages/my_robot_main-0.0.0-py3.12.egg-info
+[0.730s] running install_scripts
+[0.786s] writing list of installed files to '/home/shahil/Documents/Project_Eon/build/my_robot_main/install.log'
+[0.799s] Invoked command in '/home/shahil/Documents/Project_Eon/src/my_robot_main' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com LANG=en_US.UTF-8 PYTHONPATH=/home/shahil/Documents/Project_Eon/build/my_robot_main/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/shahil/Documents/Project_Eon/install/my_robot_main/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/my_robot_main build --build-base /home/shahil/Documents/Project_Eon/build/my_robot_main/build install --record /home/shahil/Documents/Project_Eon/build/my_robot_main/install.log --single-version-externally-managed install_data

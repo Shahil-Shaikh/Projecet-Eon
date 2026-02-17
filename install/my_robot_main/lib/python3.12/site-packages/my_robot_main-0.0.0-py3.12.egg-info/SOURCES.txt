@@ -1,0 +1,17 @@
+package.xml
+setup.cfg
+setup.py
+../../build/my_robot_main/my_robot_main.egg-info/PKG-INFO
+../../build/my_robot_main/my_robot_main.egg-info/SOURCES.txt
+../../build/my_robot_main/my_robot_main.egg-info/dependency_links.txt
+../../build/my_robot_main/my_robot_main.egg-info/requires.txt
+../../build/my_robot_main/my_robot_main.egg-info/top_level.txt
+../../build/my_robot_main/my_robot_main.egg-info/zip-safe
+my_robot_main/__init__.py
+my_robot_main/py.typed
+resource/my_robot_main
+test/test_copyright.py
+test/test_flake8.py
+test/test_mypy.py
+test/test_pep257.py
+test/test_xmllint.py
