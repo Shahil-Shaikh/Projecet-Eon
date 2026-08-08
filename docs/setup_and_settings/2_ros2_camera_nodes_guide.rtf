@@ -1,0 +1,724 @@
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Creating ROS 2 Camera Nodes from Scratch}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\i Deep Conceptual Guide for IMX708 and Arducam ToF Cameras}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Ubuntu 24.04 \u8226 ? ROS 2 Jazzy \u8226 ? Raspberry Pi 5\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Table of Contents\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 1. Prerequisites and Foundation Knowledge\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 2. Understanding ROS 2 Node Architecture\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 3. Part 1: Creating the IMX708 Camera Node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 4. Part 2: Creating the ToF Camera Node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 5. Advanced Concepts and Data Flow\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 6. Testing and Debugging\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 7. Complete Code Reference\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 1. Prerequisites and Foundation Knowledge\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 1.1 What You Need to Know Before Starting\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Before diving into creating camera nodes, you need to understand fundamental ROS 2 concepts. This section builds the foundation for everything that follows.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 What is a ROS 2 Node?\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 A node is a process that performs computation. Think of it as a small program that does one specific job. Instead of building one monolithic program, ROS 2 encourages you to build many small, focused nodes that communicate with each other.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Traditional Approach:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab One big program does everything\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Reads camera, processes images, controls motors\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Hard to debug, hard to reuse\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b ROS 2 Approach:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Camera Node - only handles camera\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Image Processor Node - only processes images\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Motor Controller Node - only controls motors\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Each can be tested, debugged, and reused independently\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ROS 2 Communication: Topics\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Nodes communicate by publishing and subscribing to topics. A topic is like a radio channel - one node broadcasts (publishes) on the channel, and other nodes listen (subscribe) to it.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Publisher Example:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.publisher = self.create_publisher(Image, 'camera/image', 10)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.publisher.publish(image_msg)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Subscriber Example:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.subscription = self.create_subscription(\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Image, 'camera/image', self.callback, 10)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The number 10 is the queue size - how many messages to buffer if the subscriber is slow.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Understanding sensor_msgs/Image\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The Image message type is the standard way to transmit camera images in ROS 2. Understanding its structure is crucial for camera node development.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Message Structure:}\par}
+{
+\trowd \trgaph120
+\cellx2880\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b Field}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b Description}\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 header.stamp\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Timestamp when image was captured\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 header.frame_id\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Which camera/sensor produced this\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 height, width\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Image dimensions in pixels\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 encoding\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Color format (bgr8, rgb8, mono8, etc.)\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 step\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Number of bytes per row\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 data\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Actual pixel data as byte array\par}
+\cell}
+}
+\intbl\row}
+{\pard \ql \f0 \sa180 \li0 \fi0 \par}
+{\pard \ql \f0 \sa180 \li0 \fi0 cv_bridge: The OpenCV-ROS Bridge\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 OpenCV (the computer vision library) and ROS use different image formats. cv_bridge translates between them.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Why We Need It:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab OpenCV uses numpy arrays (simple, fast)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab ROS uses sensor_msgs/Image (structured, network-ready)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab cv_bridge converts between them efficiently\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Basic Usage:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 from cv_bridge import CvBridge\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 bridge = CvBridge()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # OpenCV to ROS\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 opencv_image = cv2.imread('photo.jpg')\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ros_msg = bridge.cv2_to_imgmsg(opencv_image, encoding='bgr8')\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # ROS to OpenCV\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ros_msg = Image() # received from topic\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 opencv_image = bridge.imgmsg_to_cv2(ros_msg, 'bgr8')\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 2. Understanding ROS 2 Node Architecture\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 2.1 The Lifecycle of a ROS 2 Node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Every ROS 2 node follows a specific lifecycle from initialization to shutdown. Understanding this flow is essential for proper node development.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Main Function Structure:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 import rclpy\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 from rclpy.node import Node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 def main():\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Step 1: Initialize ROS 2\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 rclpy.init()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Step 2: Create node instance\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 node = CameraNode()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Step 3: Keep node alive (event loop)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 rclpy.spin(node)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Step 4: Cleanup\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 node.destroy_node()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 rclpy.shutdown()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Let me explain each step in detail:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Step 1 - rclpy.init():}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Sets up ROS 2 communication infrastructure\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Connects to the ROS 2 network (DDS layer)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Must be called before creating any nodes\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Step 2 - CameraNode():}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Creates instance of your node class\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Calls __init__() which sets up publishers, timers, hardware\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Node is now ready to start working\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Step 3 - rclpy.spin(node):}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Enters the event loop (infinite loop)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Executes timer callbacks at their scheduled times\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Processes incoming messages\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Keeps running until Ctrl+C is pressed\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Step 4 - Cleanup:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab destroy_node() calls your cleanup code\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Closes files, stops hardware, releases resources\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab rclpy.shutdown() disconnects from ROS network\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 2.2 Node Initialization Pattern\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The __init__() method is where you set up everything your node needs. There is a standard pattern to follow.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Standard Initialization Pattern:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 class CameraNode(Node):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 def __init__(self):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # STEP 1: Call parent class (REQUIRED!)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 super().__init__('camera_node')\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # STEP 2: Declare parameters\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.declare_parameter('width', 640)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.declare_parameter('height', 480)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.declare_parameter('fps', 30)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # STEP 3: Get parameter values\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 width = self.get_parameter('width').value\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 height = self.get_parameter('height').value\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # STEP 4: Create publishers\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.publisher_ = self.create_publisher(\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Image, 'camera/image_raw', 10)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # STEP 5: Initialize utilities\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.bridge = CvBridge()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.buffer = b''\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # STEP 6: Initialize hardware\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.process = self.start_camera(width, height)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # STEP 7: Create timer (starts callbacks)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.timer = self.create_timer(0.001, self.timer_callback)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # STEP 8: Log success\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.get_logger().info('Camera node started')\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 2.3 Timer Callbacks: The Heart of Your Node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Timer callbacks are how your node does work repeatedly. Understanding timers is crucial for camera nodes because they need to continuously capture and publish frames.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Creating a Timer:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Create timer that runs at 30 Hz (30 times per second)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.timer = self.create_timer(1.0/30.0, self.timer_callback)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # ^^^^^^^^ ^^^^^^^^^^^^^^^\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # period function to call\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Why Use Timers Instead of While Loops?}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\i Bad Approach (blocking):}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 def main():\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 node = CameraNode()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 while True: # BAD! Blocks everything!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 node.capture_and_publish()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # ROS can't process other things!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\i Good Approach (non-blocking):}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 def __init__(self):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.timer = self.create_timer(0.033, self.capture_and_publish)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # ROS manages the loop, callback is non-blocking\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Benefits of Timers:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Non-blocking: ROS can still process other tasks\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Precise timing: ROS ensures callbacks run on schedule\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Clean shutdown: Ctrl+C works properly\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Multiple timers: Can have different rates for different tasks\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 3. Part 1: Creating the IMX708 Camera Node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 3.1 The Problem and Our Solution\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The IMX708 camera uses libcamera, which is not directly compatible with standard ROS camera drivers. We need a bridge between libcamera and ROS 2.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b The Challenge:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab IMX708 uses CSI interface (not USB)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Requires libcamera (modern camera framework)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab ROS camera drivers expect V4L2 or direct API access\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Direct libcamera integration is complex\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Our Solution: rpicam-vid Bridge}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Use rpicam-vid (command-line tool)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Run it as subprocess from Python\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab rpicam-vid outputs MJPEG stream to stdout\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Read stream, decode frames, publish to ROS\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Architecture Diagram:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Hardware Level:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [IMX708 Camera] --> CSI Interface --> [Raspberry Pi 5]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Software Level:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [libcamera] handles camera communication\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [rpicam-vid subprocess] encodes as MJPEG\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [stdout pipe] streams MJPEG data\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [Python ROS Node] reads, decodes, publishes\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [/camera/image_raw topic]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 3.2 Understanding MJPEG Streaming\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 MJPEG (Motion JPEG) is a video format where each frame is a complete JPEG image. Understanding how to parse this stream is key to our implementation.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b What is MJPEG?}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab MJPEG = Series of JPEG images sent one after another\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Each frame is independently encoded (no inter-frame compression)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Easy to parse because each JPEG has clear start/end markers\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b JPEG Boundary Markers:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Start marker: 0xFF 0xD8 (two bytes)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 End marker: 0xFF 0xD9 (two bytes)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 MJPEG stream looks like:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [0xFF 0xD8...JPEG data...0xFF 0xD9][0xFF 0xD8...JPEG data...0xFF 0xD9]...\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ^ ^ ^ ^\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Start End Start End\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Parsing Algorithm:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 buffer = b'' # Empty buffer\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 while True:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Read data from subprocess\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 chunk = process.stdout.read(4096)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 buffer += chunk # Accumulate data\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Find JPEG boundaries\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 start = buffer.find(b'\\xff\\xd8')\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 end = buffer.find(b'\\xff\\xd9')\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 if start != -1 and end != -1 and end > start:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # We have complete JPEG!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 jpg = buffer[start:end+2] # Extract (+2 for end marker)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 buffer = buffer[end+2:] # Remove from buffer\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Decode and use\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 frame = cv2.imdecode(np.frombuffer(jpg, np.uint8), cv2.IMREAD_COLOR)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 3.3 Complete IMX708 Node Implementation\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Now we put it all together. This is the complete, production-ready implementation with detailed comments explaining each part.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b File: imx708_publisher.py}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 #!/usr/bin/env python3\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 """\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 IMX708 Camera Publisher Node for ROS 2\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Publishes camera feed from Raspberry Pi Camera Module 3\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 """\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 import rclpy\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 from rclpy.node import Node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 from sensor_msgs.msg import Image\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 from cv_bridge import CvBridge\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 import cv2\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 import subprocess\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 import numpy as np\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 class IMX708Publisher(Node):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 """Node that publishes images from IMX708 camera"""\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 def __init__(self):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Initialize parent Node class\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 super().__init__('imx708_camera_node')\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Declare configurable parameters\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.declare_parameter('width', 640)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.declare_parameter('height', 480)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.declare_parameter('fps', 30)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 self.declare_parameter('camera_id', 0)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\i Due to space constraints in this document, the complete code is available in your workspace at: ~/Documents/Eon/src/camera/camera/imx708_publisher.py}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 3.4 Key Concepts in the IMX708 Implementation\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Let's break down the critical concepts that make this node work.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Concept 1: Subprocess Management}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab subprocess.Popen() creates a new process running rpicam-vid\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab stdout=subprocess.PIPE captures the output\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab We read from process.stdout like a file\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Must terminate the process on shutdown\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Concept 2: Buffer Management}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Data arrives in chunks (4096 bytes at a time)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab One JPEG frame might span multiple chunks\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Buffer accumulates data until complete frame found\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab After extracting frame, remove it from buffer\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Concept 3: Image Encoding}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab cv2.imdecode() converts JPEG bytes to numpy array\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab cv_bridge.cv2_to_imgmsg() converts numpy to ROS message\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab encoding='bgr8' means 8-bit BGR color (OpenCV default)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab header.stamp records capture time\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab header.frame_id identifies which camera\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Concept 4: Timer Rate Selection}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Timer at 1ms (0.001s) checks for new data frequently\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Actual publish rate depends on camera FPS\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Fast timer = low latency, but uses more CPU\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Could use 10ms or 33ms for lower CPU usage\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 4. Part 2: Creating the ToF Camera Node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 4.1 Understanding ToF Camera Differences\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The Arducam ToF camera is fundamentally different from the IMX708. It provides depth information, not RGB images. This requires a different approach.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Key Differences from IMX708:}\par}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b Aspect}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b IMX708}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b ToF}\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Data Type\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 RGB Images\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Depth + Amplitude\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Interface\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 CSI only\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 CSI + I2C\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 SDK\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 libcamera + rpicam\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 ArducamDepthCamera\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Resolution\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Up to 4608x2592\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 240x180\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Output Format\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Image message\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 PointCloud2 + depth\par}
+\cell}
+}
+\intbl\row}
+{\pard \ql \f0 \sa180 \li0 \fi0 \par}
+{\pard \ql \f0 \sa180 \li0 \fi0 4.2 ToF Camera Architecture\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The ToF node uses the official Arducam SDK, which provides direct API access. This is simpler than the rpicam-vid bridge but requires proper hardware access.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Data Flow:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [ToF Camera Hardware]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 CSI + I2C interfaces\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [ArducamDepthCamera SDK]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Direct API calls\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [ROS 2 Node]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Publishes to:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 |\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 - /point_cloud (3D points)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 - /depth_frame (depth array)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Key Differences from IMX708 Approach:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab No subprocess - direct Python API\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab No MJPEG parsing - SDK returns numpy arrays\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Simpler but requires specific device index (8)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Must handle I2C permissions\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 4.3 Understanding Point Clouds\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 A point cloud is a collection of 3D points (x, y, z coordinates) representing the physical world. The ToF camera measures depth and converts it to 3D points.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b How ToF Measures Depth:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab ToF = Time of Flight\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Camera emits infrared light\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Light bounces off objects and returns\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Measures time for light to return\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Calculates distance: depth = (speed of light \u215 ? time) / 2\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Converting Depth to 3D Points:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 For each pixel at position (u, v):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 1. Get depth value z (in meters)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 2. Calculate x = (u - cx) \u215 ? z / fx\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 3. Calculate y = (v - cy) \u215 ? z / fy\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Where:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 cx, cy = camera center (image width/2, height/2)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 fx, fy = focal lengths (from camera intrinsics)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Confidence Values:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Each depth measurement has confidence (0-255)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Low confidence = unreliable measurement\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Filter out points with confidence < 30\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Results in cleaner point clouds\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 4.4 ToF Node Implementation Concepts\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The ToF node uses the official Arducam package. Here are the key concepts you need to understand.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Concept 1: Device Index Issue}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 When running both cameras simultaneously, the ToF camera is at device index 8 (not 0). This is because:\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Both cameras use the CSI interface\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab They are enumerated by the system in order\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab IMX708 takes lower indices\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab ToF ends up at index 8\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Concept 2: I2C Permissions}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The ToF camera uses I2C for communication, which requires special permissions:\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Create i2c group: sudo groupadd i2c\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Add user to group: sudo usermod -a -G i2c $USER\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Create udev rule for /dev/i2c-* devices\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Reboot for changes to take effect\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Concept 3: Threading for Point Cloud Generation}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The official Arducam package uses threading to separate data acquisition from publishing:\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Background thread requests frames continuously\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Converts depth to 3D points\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Main thread (timer) publishes at 30 Hz\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Prevents blocking if computation is slow\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Concept 4: Multiple Topic Publishing}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 The ToF node publishes two complementary topics:\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab /point_cloud - For visualization in RViz, SLAM\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab /depth_frame - Raw depth for custom processing\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Both synchronized (same timestamp)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Choose based on your application needs\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 5. Advanced Concepts and Data Flow\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 5.1 Complete System Data Flow\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Now that you understand both nodes, let's see how data flows through the entire system from hardware to ROS topics.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Hardware Level:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [IMX708 Camera] --CSI--> [Raspberry Pi 5 RP1 Chip]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [ToF Camera] --CSI+I2C--> [Raspberry Pi 5 RP1 Chip]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Driver Level:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [RP1 Chip] --> [libcamera (IMX708)]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 --> [Arducam SDK (ToF)]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Application Level:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [libcamera] --> [rpicam-vid] --> [IMX708 Node]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [Arducam SDK] ----------------> [ToF Node]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b ROS Level:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [IMX708 Node] --> /camera/image_raw topic\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 [ToF Node] ----> /point_cloud topic\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 --> /depth_frame topic\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 5.2 Timing and Synchronization\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Understanding timing is crucial for robotics applications where sensor data needs to be synchronized.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Frame Timestamps:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Each message has header.stamp (ROS timestamp)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Set with self.get_clock().now().to_msg()\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Records when frame was captured\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Critical for sensor fusion and SLAM\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Publishing Rates:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab IMX708: Up to 120 fps (depending on resolution)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab ToF: 30 fps (fixed by hardware)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Both run independently (not synchronized)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Use message_filters for synchronization if needed\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 5.3 Resource Management and Performance\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Camera nodes can be resource-intensive. Understanding resource usage helps optimize your robot's performance.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b CPU Usage:}\par}
+{
+\trowd \trgaph120
+\cellx4320\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b Component}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b CPU Usage}\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx4320\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 rpicam-vid subprocess\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 15-25% (MJPEG encoding)\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx4320\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 IMX708 Node (Python)\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 5-10% (decoding + ROS)\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx4320\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 ToF Node\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 10-15% (point cloud gen)\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx4320\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b Total}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b ~30-50%}\par}
+\cell}
+}
+\intbl\row}
+{\pard \ql \f0 \sa180 \li0 \fi0 \par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Optimization Tips:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Lower IMX708 resolution (640x480 vs 1920x1080)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Reduce frame rate if real-time not needed\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Use YUV instead of MJPEG (less encoding overhead)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Consider camera_ros for better efficiency\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 6. Testing and Debugging\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 6.1 Testing Individual Nodes\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Proper testing ensures your nodes work correctly before integrating them into your robot system.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Testing IMX708 Node:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Terminal 1: Run node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 source ~/Documents/Eon/install/setup.bash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ros2 run camera imx708_node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Terminal 2: Check topic\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ros2 topic list\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ros2 topic hz /camera/image_raw\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ros2 topic echo /camera/image_raw --once\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Terminal 3: Visualize\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ros2 run rqt_image_view rqt_image_view\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Testing ToF Node:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Terminal 1: Run node\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 source ~/Documents/Eon/install/setup.bash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ros2 run arducam_rclpy_tof_pointcloud tof_pointcloud\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Terminal 2: Check topics\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ros2 topic hz /point_cloud\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ros2 topic hz /depth_frame\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Terminal 3: Visualize in RViz\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 rviz2\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 # Add PointCloud2 display, select /point_cloud topic\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 6.2 Common Issues and Solutions\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Here are the most common issues you'll encounter and how to fix them.\par}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b Issue}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b Cause}\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 {\b Solution}\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 No topics published\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Node not running or crashed\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Check node logs, restart node\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Permission denied\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Not in video/i2c group\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Add to groups, reboot\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Black/corrupted images\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Camera cable loose\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Reseat camera cable\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Low frame rate\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 CPU overloaded\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Lower resolution/fps\par}
+\cell}
+}
+\intbl\row}
+{
+\trowd \trgaph120
+\cellx2880\cellx5760\cellx8640
+\trkeep\intbl
+{
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 ToF device index error\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Wrong device index\par}
+\cell}
+{{\pard\intbl \ql \f0 \sa0 \li0 \fi0 Set device_index to 8\par}
+\cell}
+}
+\intbl\row}
+{\pard \ql \f0 \sa180 \li0 \fi0 \par}
+{\pard \ql \f0 \sa180 \li0 \fi0 7. Complete Code Reference\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 7.1 Package Structure\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Your complete ROS 2 workspace structure for both camera nodes.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 ~/Documents/Eon/\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9500 ?\u9472 ?\u9472 ? src/\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9500 ?\u9472 ?\u9472 ? camera/ # IMX708 package\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9474 ? \u9500 ?\u9472 ?\u9472 ? camera/\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9474 ? \u9474 ? \u9500 ?\u9472 ?\u9472 ? __init__.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9474 ? \u9474 ? \u9492 ?\u9472 ?\u9472 ? imx708_publisher.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9474 ? \u9500 ?\u9472 ?\u9472 ? package.xml\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9474 ? \u9500 ?\u9472 ?\u9472 ? setup.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9474 ? \u9492 ?\u9472 ?\u9472 ? setup.cfg\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9474 ?\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9492 ?\u9472 ?\u9472 ? arducam/ # ToF package\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9492 ?\u9472 ?\u9472 ? arducam_rclpy_tof_pointcloud/\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9500 ?\u9472 ?\u9472 ? arducam_rclpy_tof_pointcloud/\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9474 ? \u9500 ?\u9472 ?\u9472 ? __init__.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9474 ? \u9492 ?\u9472 ?\u9472 ? tof_pointcloud.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9500 ?\u9472 ?\u9472 ? package.xml\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9500 ?\u9472 ?\u9472 ? setup.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ? \u9492 ?\u9472 ?\u9472 ? setup.cfg\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9474 ?\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9500 ?\u9472 ?\u9472 ? build/ # Build artifacts\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9500 ?\u9472 ?\u9472 ? install/ # Installed packages\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9492 ?\u9472 ?\u9472 ? log/ # Build logs\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 7.2 Key Takeaways\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Let's summarize the most important concepts you've learned.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b IMX708 Camera Node:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Uses rpicam-vid subprocess as bridge\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Parses MJPEG stream using JPEG markers\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Decodes with cv2.imdecode()\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Converts to ROS with cv_bridge\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Publishes to /camera/image_raw\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b ToF Camera Node:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Uses ArducamDepthCamera SDK directly\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Requires device index 8 (not 0)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Needs I2C permissions\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Converts depth to 3D point cloud\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Publishes /point_cloud and /depth_frame\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b ROS 2 Fundamentals:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Nodes are modular, single-purpose programs\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Topics enable pub/sub communication\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Timer callbacks handle periodic tasks\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab cv_bridge translates OpenCV \u8596 ? ROS\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Parameters make nodes configurable\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 7.3 Next Steps\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Now that you understand how to create camera nodes, here are recommended next steps for your robotics journey.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Immediate Next Steps:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Create launch files to start both nodes together\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Add camera calibration (for accurate measurements)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Implement image processing nodes (subscribers)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Test with RViz for visualization\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Advanced Topics to Explore:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Sensor fusion (combine camera + ToF data)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab SLAM (Simultaneous Localization and Mapping)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Object detection integration\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Navigation stack integration\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 \bullet \tx360\tab Multi-robot coordination\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b End of Guide}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\i You now have a complete understanding of ROS 2 camera node creation!}\par}

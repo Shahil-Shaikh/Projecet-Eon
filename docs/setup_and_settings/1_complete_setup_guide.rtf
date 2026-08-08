@@ -1,0 +1,1264 @@
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel0 \b \fs36 Complete Raspberry Pi Camera Setup Guide for Ubuntu 22.04\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 From Absolute Zero to Fully Working Dual Camera System with OpenCV & Object Detection\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Author:} Based on setup session from March 2026\line {\b System:} Raspberry Pi 5 (8GB RAM recommended)\line {\b OS:} Ubuntu 22.04 LTS (64-bit)\line {\b Hardware:} - Raspberry Pi Camera Module 3 (IMX708 sensor) - Arducam ToF Depth Camera\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Table of Contents\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab {\field{\*\fldinst{HYPERLINK "#introduction---the-problem-were-solving"}}{\fldrslt{\ul
+Introduction - The Problem We\u8217're Solving
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab {\field{\*\fldinst{HYPERLINK "#prerequisites---what-you-need"}}{\fldrslt{\ul
+Prerequisites - What You Need
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 3.\tx360\tab {\field{\*\fldinst{HYPERLINK "#understanding-the-problem"}}{\fldrslt{\ul
+Understanding the Problem
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 4.\tx360\tab {\field{\*\fldinst{HYPERLINK "#part-1-fresh-ubuntu-installation--initial-setup"}}{\fldrslt{\ul
+Part 1: Fresh Ubuntu Installation & Initial Setup
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 5.\tx360\tab {\field{\*\fldinst{HYPERLINK "#part-2-building-raspberry-pis-custom-libcamera"}}{\fldrslt{\ul
+Part 2: Building Raspberry Pi\u8217's Custom libcamera
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 6.\tx360\tab {\field{\*\fldinst{HYPERLINK "#part-3-installing-rpicam-apps-camera-tools"}}{\fldrslt{\ul
+Part 3: Installing rpicam-apps (Camera Tools)
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 7.\tx360\tab {\field{\*\fldinst{HYPERLINK "#part-4-fixing-dma-heap-errors"}}{\fldrslt{\ul
+Part 4: Fixing DMA Heap Errors
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 8.\tx360\tab {\field{\*\fldinst{HYPERLINK "#part-5-installing-arducam-tof-camera-support"}}{\fldrslt{\ul
+Part 5: Installing Arducam ToF Camera Support
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 9.\tx360\tab {\field{\*\fldinst{HYPERLINK "#part-6-dual-camera-configuration"}}{\fldrslt{\ul
+Part 6: Dual Camera Configuration
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 10.\tx360\tab {\field{\*\fldinst{HYPERLINK "#part-7-testing-both-cameras"}}{\fldrslt{\ul
+Part 7: Testing Both Cameras
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 11.\tx360\tab {\field{\*\fldinst{HYPERLINK "#part-8-opencv-integration"}}{\fldrslt{\ul
+Part 8: OpenCV Integration
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 12.\tx360\tab {\field{\*\fldinst{HYPERLINK "#part-9-object-detection-with-yolov8"}}{\fldrslt{\ul
+Part 9: Object Detection with YOLOv8
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 13.\tx360\tab {\field{\*\fldinst{HYPERLINK "#part-10-performance-optimization"}}{\fldrslt{\ul
+Part 10: Performance Optimization
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 14.\tx360\tab {\field{\*\fldinst{HYPERLINK "#troubleshooting-guide"}}{\fldrslt{\ul
+Troubleshooting Guide
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 15.\tx360\tab {\field{\*\fldinst{HYPERLINK "#understanding-the-concepts"}}{\fldrslt{\ul
+Understanding the Concepts
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 16.\tx360\tab {\field{\*\fldinst{HYPERLINK "#quick-reference"}}{\fldrslt{\ul
+Quick Reference
+}}}
+\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 17.\tx360\tab {\field{\*\fldinst{HYPERLINK "#appendix"}}{\fldrslt{\ul
+Appendix
+}}}
+\sa180\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Introduction - The Problem We\u8217're Solving\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 What Doesn\u8217't Work on Ubuntu 22.04:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u10060 ? {\b Raspberry Pi Camera Module 3} - Not detected out of the box\line \u10060 ? {\b Arducam ToF Camera} - Driver not installed\line \u10060 ? {\b OpenCV direct camera access} - {\f1 cv2.VideoCapture(0)} doesn\u8217't work\line \u10060 ? {\b Standard camera tools} - Need special rpicam-apps\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 What DOES Work on Raspberry Pi OS:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9989 ? All cameras work immediately\line \u9989 ? Pre-configured drivers\line \u9989 ? Ready-to-use tools\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Why We\u8217're Using Ubuntu Anyway:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Better ROS 2 support\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab More up-to-date packages\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Better for robotics development\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab More familiar for developers coming from other Linux systems\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 What We\u8217'll Accomplish:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9989 ? Both cameras working simultaneously\line \u9989 ? OpenCV integration\line \u9989 ? YOLOv8 object detection\line \u9989 ? All camera tools (rpicam-hello, rpicam-still, rpicam-vid)\line \u9989 ? Proper understanding of WHY everything works\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Prerequisites - What You Need\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Hardware:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Raspberry Pi 5} (4GB or 8GB RAM)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b MicroSD card} (32GB+ recommended)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Raspberry Pi Camera Module 3} with ribbon cable\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Arducam ToF Depth Camera} with ribbon cable\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Power supply} (Official 27W USB-C recommended)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Monitor, keyboard, mouse} (for initial setup)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Internet connection} (Ethernet or WiFi)\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Software You\u8217'll Install:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Ubuntu 22.04 LTS (64-bit) for Raspberry Pi\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Custom libcamera (we\u8217'll build from source)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab rpicam-apps (we\u8217'll build from source)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Arducam drivers and SDK\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Python 3, OpenCV, YOLOv8\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Various development tools\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Time Required:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Initial setup:} 30 minutes\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Building software:} 1-2 hours (compiling takes time)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Testing & configuration:} 30 minutes\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b Total:} ~3 hours\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Skill Level:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Basic Linux command line knowledge\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Ability to follow instructions carefully\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Patience (compiling takes time!)\sa180\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Understanding the Problem\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Before we start, let\u8217's understand WHY Raspberry Pi cameras don\u8217't work on Ubuntu by default.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 The Core Issue:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Raspberry Pi Cameras are NOT standard webcams!}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 They connect via CSI (Camera Serial Interface), not USB. This requires special software:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab {\b Device Tree Overlays} - Tell Linux kernel the camera hardware exists\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab {\b libcamera} - Modern camera framework for Linux\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 3.\tx360\tab {\b Pipeline Handlers} - Translate camera sensor data\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 4.\tx360\tab {\b IPA (Image Processing Algorithms)} - Auto-exposure, white balance, etc.\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 The Ubuntu Problem:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Ubuntu 22.04 includes:\line
+\u9500 ?\u9472 ?\u9472 ? Generic libcamera (upstream version)\line
+\u9500 ?\u9472 ?\u9472 ? No Raspberry Pi camera drivers\line
+\u9500 ?\u9472 ?\u9472 ? No device tree overlays for Pi cameras\line
+\u9492 ?\u9472 ?\u9472 ? No rpicam-apps tools\line
+\line
+Raspberry Pi OS includes:\line
+\u9500 ?\u9472 ?\u9472 ? Custom libcamera (Raspberry Pi fork)\line
+\u9500 ?\u9472 ?\u9472 ? All Pi camera drivers built-in\line
+\u9500 ?\u9472 ?\u9472 ? Pre-configured device tree overlays\line
+\u9492 ?\u9472 ?\u9472 ? All rpicam-apps pre-installed\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 What We\u8217'll Do:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 We\u8217'll manually add everything that Raspberry Pi OS has built-in:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab Build Raspberry Pi\u8217's custom libcamera fork\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab Install device tree overlays\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 3.\tx360\tab Build rpicam-apps\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 4.\tx360\tab Configure memory and permissions\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 5.\tx360\tab Set up dual camera support\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Analogy:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Raspberry Pi OS} = Buying a car with the keys included, parking spot reserved, insurance done\line {\b Ubuntu 22.04} = Buying a car without keys, no parking, no insurance - you do it all yourself\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 But once done, it works just as well (or better) than Raspberry Pi OS!\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Part 1: Fresh Ubuntu Installation & Initial Setup\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 1.1: Install Ubuntu 22.04 on Raspberry Pi 5\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Download Ubuntu 22.04 LTS (64-bit) for Raspberry Pi from: https://ubuntu.com/download/raspberry-pi\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Use Raspberry Pi Imager or balenaEtcher to write to SD card.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Boot the Pi and complete initial setup:} - Choose username and password - Connect to WiFi/Ethernet - Update timezone and keyboard layout\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 1.2: First Boot Updates\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 After first boot, update everything:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo apt update\line
+sudo apt upgrade -y\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 This will take 10-20 minutes. Reboot after:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo reboot\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 1.3: Install Essential Build Tools\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Install all the tools we\u8217'll need for building software:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo apt install -y \\\line
+  git \\\line
+  cmake \\\line
+  ninja-build \\\line
+  pkg-config \\\line
+  curl \\\line
+  wget \\\line
+  nano \\\line
+  build-essential \\\line
+  python3-pip \\\line
+  python3-dev\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 1.4: Check System Info\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Verify you\u8217're on the right system:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # Check OS version\line
+lsb_release -a\line
+# Should show: Ubuntu 22.04 LTS\line
+\line
+# Check architecture\line
+uname -m\line
+# Should show: aarch64 (64-bit ARM)\line
+\line
+# Check Raspberry Pi model\line
+cat /proc/device-tree/model\line
+# Should show: Raspberry Pi 5\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 1.5: Connect Cameras (Don\u8217't Power On Yet!)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b POWER OFF the Raspberry Pi completely:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo shutdown -h now\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Connect cameras to CSI ports:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 1.\tx360\tab {\b Locate the two camera ports on Raspberry Pi 5:}\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab {\b CAM0} = Port closest to USB-C power connector\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab {\b CAM1} = Port closest to HDMI ports\sa180\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 2.\tx360\tab {\b Gently lift the plastic clip} on each port\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 3.\tx360\tab {\b Connect cameras:}\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab {\b IMX708 Camera Module 3} \u8594 ? CAM0 port (blue side facing Ethernet/USB ports)\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab {\b Arducam ToF Camera} \u8594 ? CAM1 port (blue side facing Ethernet/USB ports)\sa180\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 4.\tx360\tab {\b Push down the plastic clips} to secure cables\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 5.\tx360\tab {\b Power on the Pi}\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Important:} Ribbon cable orientation matters! The blue/silver side should face the Ethernet/USB ports.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Part 2: Building Raspberry Pi\u8217's Custom libcamera\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Why We Need This:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Ubuntu\u8217's libcamera doesn\u8217't include Raspberry Pi camera drivers. We need to build Raspberry Pi\u8217's modified version from source.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 2.1: Remove Generic libcamera\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 First, remove Ubuntu\u8217's version to avoid conflicts:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo apt remove --purge libcamera-dev libcamera0 libcamera-tools rpicam-apps\line
+sudo apt autoremove\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 2.2: Install Build Dependencies\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Install everything libcamera needs to compile:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo apt install -y \\\line
+  libboost-dev \\\line
+  libglib2.0-dev \\\line
+  libgstreamer-plugins-base1.0-dev \\\line
+  libgnutls28-dev \\\line
+  openssl \\\line
+  libjpeg-dev \\\line
+  libpng-dev \\\line
+  libtiff-dev \\\line
+  python3-yaml \\\line
+  python3-ply \\\line
+  python3-jinja2 \\\line
+  pybind11-dev \\\line
+  libyaml-dev \\\line
+  libcap-dev\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 2.3: Install Meson Build System\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Ubuntu 22.04\u8217's meson is too old. Install latest via pip:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo pip3 install meson\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Verify installation:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 meson --version\line
+# Should show version 1.0+\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 2.4: Clone Raspberry Pi\u8217's libcamera\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Download the Raspberry Pi fork of libcamera:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 cd ~\line
+git clone https://github.com/raspberrypi/libcamera.git\line
+cd libcamera\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 2.5: Configure the Build\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Set up the build configuration:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 meson setup build --buildtype=release \\\line
+  -Dpipelines=rpi/vc4,rpi/pisp \\\line
+  -Dipas=rpi/vc4,rpi/pisp \\\line
+  -Dv4l2=enabled \\\line
+  -Dgstreamer=enabled \\\line
+  -Dtest=false \\\line
+  -Dlc-compliance=disabled \\\line
+  -Dcam=disabled \\\line
+  -Dqcam=disabled \\\line
+  -Ddocumentation=disabled \\\line
+  -Dpycamera=enabled\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b What these options mean:}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\f1 pipelines=rpi/vc4,rpi/pisp} - Enable Raspberry Pi camera pipelines\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab {\f1 rpi/pisp} = Pi 5\u8217's Image Signal Processor\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab {\f1 rpi/vc4} = Older Pi\u8217's VideoCore IV\sa180\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\f1 ipas=rpi/vc4,rpi/pisp} - Enable Image Processing Algorithms for Pi cameras\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\f1 v4l2=enabled} - V4L2 compatibility layer\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\f1 gstreamer=enabled} - GStreamer video framework support\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\f1 pycamera=enabled} - Python bindings (important for picamera2)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Disabled features we don\u8217't need (tests, GUI tools, docs)\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 2.6: Build libcamera\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Now compile the code:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ninja -C build\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b This will take 30-60 minutes!} The Raspberry Pi 5 will compile using all CPU cores.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 You\u8217'll see lots of compilation messages. Don\u8217't worry unless you see \u8220"ERROR\u8221" messages.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 2.7: Install libcamera\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Once compilation finishes, install it:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo ninja -C build install\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 2.8: Update System Library Cache\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Tell the system about the new libraries:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo ldconfig\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 2.9: Verify Installation\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Check if libcamera is installed:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ldconfig -p | grep libcamera\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Should show several libcamera libraries in {\f1 /usr/local/lib/}.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Part 3: Installing rpicam-apps (Camera Tools)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Why We Need This:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 rpicam-apps provides command-line tools to use the camera: - {\f1 rpicam-hello} - Camera preview - {\f1 rpicam-still} - Take photos - {\f1 rpicam-vid} - Record video - {\f1 rpicam-jpeg} - Capture JPEG images\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 3.1: Install Additional Dependencies\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo apt install -y \\\line
+  libavcodec-dev \\\line
+  libavdevice-dev \\\line
+  libavformat-dev \\\line
+  libswresample-dev \\\line
+  libdrm-dev \\\line
+  libexif-dev \\\line
+  libx11-dev \\\line
+  libboost-program-options-dev \\\line
+  libepoxy-dev\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 3.2: Clone rpicam-apps Repository\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 cd ~\line
+git clone https://github.com/raspberrypi/rpicam-apps.git\line
+cd rpicam-apps\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 3.3: Configure the Build\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 meson setup build \\\line
+  -Denable_libav=enabled \\\line
+  -Denable_drm=enabled \\\line
+  -Denable_egl=enabled\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b What these options mean:}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\f1 enable_libav=enabled} - Video encoding support (H.264, etc.)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\f1 enable_drm=enabled} - Direct rendering for preview windows\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\f1 enable_egl=enabled} - OpenGL for rendering\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 3.4: Build rpicam-apps\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ninja -C build\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 This takes 15-30 minutes.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 3.5: Install rpicam-apps\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo ninja -C build install\line
+sudo ldconfig\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 3.6: Verify Installation\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Check if commands are available:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 which rpicam-hello\line
+which rpicam-still\line
+which rpicam-vid\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Each should show a path like {\f1 /usr/local/bin/rpicam-hello}.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Part 4: Fixing DMA Heap Errors\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 The Problem:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Even with libcamera installed, you\u8217'll get errors like:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Could not open any dmaHeap device\line
+dmaHeap allocation failure\line
+ERROR: *** failed to allocate capture buffers for stream ***\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Why This Happens:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Two issues:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab {\b Permission Problem:} DMA heap devices exist but only root can access them\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab {\b Memory Problem:} Not enough contiguous memory allocated for camera buffers\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 4.1: Fix DMA Heap Permissions\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Create a udev rule to automatically set permissions:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo nano /etc/udev/rules.d/99-dma-heap.rules\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Add this single line:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 SUBSYSTEM=="dma_heap", GROUP="video", MODE="0660"\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b What this does:} - When system detects DMA heap devices - Set their group to \u8220"video\u8221" - Set permissions to 0660 (owner and group can read/write)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Save and exit: {\f1 Ctrl+X}, then {\f1 Y}, then {\f1 Enter}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 4.2: Add User to Video Group\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Give your user permission to access video devices:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo usermod -a -G video $USER\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Replace {\f1 $USER} with your actual username if needed, or it will use your current user.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 4.3: Reload udev Rules\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Apply the new rules:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo udevadm control --reload-rules\line
+sudo udevadm trigger\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 4.4: Configure CMA Memory Allocation\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Edit boot configuration:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo nano /boot/firmware/config.txt\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Scroll to the bottom} and add/modify in the {\f1 [all]} section:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 dtoverlay=vc4-kms-v3d,cma-512\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b What this does:} - Reserves 512MB of RAM for CMA (Contiguous Memory Allocator) - Camera needs large continuous memory blocks for frame buffers - This prevents allocation failures\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Save and exit.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 4.5: Reboot\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Changes to config.txt and group membership require a reboot:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo reboot\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 4.6: Verify After Reboot\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 After reboot, check everything:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Verify CMA allocation:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo dmesg | grep cma\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Should show:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Reserved memory: created CMA memory pool at 0x..., size 512 MiB\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Verify DMA heap permissions:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ls -l /dev/dma_heap/\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Should show devices with {\f1 video} group and {\f1 rw-rw----} permissions.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Verify you\u8217're in video group:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 groups\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Should include {\f1 video} in the list.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Part 5: Installing Arducam ToF Camera Support\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 5.1: Install Arducam Pivariety Driver\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Download and run the driver installer:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 cd ~\line
+wget -O install_pivariety_pkgs.sh https://github.com/ArduCAM/Arducam-Pivariety-V4L2-Driver/releases/download/install_script/install_pivariety_pkgs.sh\line
+chmod +x install_pivariety_pkgs.sh\line
+./install_pivariety_pkgs.sh -p kernel_driver\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b When prompted, choose to reboot.} The driver needs a reboot to load.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 5.2: Install System Dependencies for ToF\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 After reboot:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo apt install -y libopencv-dev python3-opencv\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 5.3: Install ArducamDepthCamera Python SDK\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Install the Python module from PyPI:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo pip3 install arducamdepthcamera --break-system-packages\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Note:} The package name is {\f1 arducamdepthcamera} (lowercase) but you import it as {\f1 ArducamDepthCamera} (with capitals).\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 5.4: Clone Arducam ToF Examples (Optional)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Get example code and demos:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 mkdir -p ~/Documents\line
+cd ~/Documents\line
+git clone https://github.com/ArduCAM/Arducam_tof_camera.git\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 5.5: Verify SDK Installation\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Test if the module loads:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 python3 -c "import ArducamDepthCamera as ac; print('ArducamDepthCamera module loaded successfully!')"\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Should print success message without errors.\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Part 6: Dual Camera Configuration\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Why Dual Camera Setup?\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Raspberry Pi 5 has {\b TWO CSI camera ports}, so we can use both cameras simultaneously!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Physical Port Layout:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 \u9484 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9488 ?\line
+\u9474 ?  Raspberry Pi 5 (Top View)      \u9474 ?\line
+\u9474 ?                                 \u9474 ?\line
+\u9474 ?  [CAM0]  \u8592 ? Near USB-C Power     \u9474 ?\line
+\u9474 ?                                 \u9474 ?\line
+\u9474 ?  [Ethernet] [USB] [USB]         \u9474 ?\line
+\u9474 ?                                 \u9474 ?\line
+\u9474 ?  [CAM1]  \u8592 ? Near HDMI            \u9474 ?\line
+\u9474 ?  [HDMI0] [HDMI1]                \u9474 ?\line
+\u9492 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9496 ?\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Our Configuration:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b CAM0} = IMX708 Camera Module 3\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab {\b CAM1} = Arducam ToF Camera\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 6.1: Edit Boot Configuration\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo nano /boot/firmware/config.txt\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 6.2: Find the {\f1 [all]} Section at the Bottom\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Scroll to the very bottom where you\u8217'll see an {\f1 [all]} section.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 6.3: Replace Entire {\f1 [all]} Section\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Delete everything in the last {\f1 [all]} section} and replace with:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 [all]\line
+# Disable auto-detection (we'll configure manually)\line
+camera_auto_detect=0\line
+\line
+# Camera 1: IMX708 (Pi Camera Module 3) on CAM0 port\line
+dtoverlay=imx708,cam0\line
+\line
+# Camera 2: Arducam ToF on CAM1 port\line
+# media-controller=0 is CRITICAL for ToF to work!\line
+dtoverlay=arducam-pivariety,cam1,media-controller=0\line
+\line
+# Allocate 512MB CMA memory for camera operations\line
+dtoverlay=vc4-kms-v3d,cma-512\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Important Notes:}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab If you connected cameras to different ports, swap {\f1 cam0} and {\f1 cam1}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab The {\f1 media-controller=0} parameter is {\b ESSENTIAL} for ToF camera\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 3.\tx360\tab Order matters - list cameras in order of their ports\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 4.\tx360\tab Don\u8217't add duplicate {\f1 dtoverlay} lines\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 6.4: Complete config.txt Example\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Your complete config.txt should look like this (showing full file):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 [all]\line
+arm_64bit=1\line
+kernel=vmlinuz\line
+cmdline=cmdline.txt\line
+initramfs initrd.img followkernel\line
+\line
+# Enable the audio output, I2C and SPI interfaces on the GPIO header\line
+dtparam=audio=on\line
+dtparam=i2c_arm=on\line
+dtparam=spi=on\line
+\line
+# Comment out the following line if the edges of the desktop appear outside\line
+# the edges of your display\line
+disable_overscan=1\line
+\line
+# If you have issues with audio, you may try uncommenting the following line\line
+# which forces the HDMI output into HDMI mode instead of DVI (which doesn't\line
+# support audio output)\line
+#hdmi_drive=2\line
+\line
+# Enable the KMS ("full" KMS) graphics overlay, leaving GPU memory as the\line
+# default (the kernel is in control of graphics memory with full KMS)\line
+#dtoverlay=vc4-kms-v3d\line
+disable_fw_kms_setup=1\line
+\line
+# Autoload overlays for any recognized cameras or displays that are attached\line
+# to the CSI/DSI ports. Please note this is for libcamera support, *not* for\line
+# the legacy camera stack\line
+camera_auto_detect=0\line
+display_auto_detect=1\line
+\line
+# Config settings specific to arm64\line
+dtoverlay=dwc2\line
+\line
+[pi4]\line
+max_framebuffers=2\line
+arm_boost=1\line
+\line
+[pi3+]\line
+# Use a smaller contiguous memory area, specifically on the 3A+ to avoid an\line
+# OOM oops on boot. The 3B+ is also affected by this section, but it shouldn't\line
+# cause any issues on that board\line
+dtoverlay=vc4-kms-v3d,cma-128\line
+\line
+[pi02]\line
+# The Zero 2W is another 512MB board which is occasionally affected by the same\line
+# OOM oops on boot.\line
+dtoverlay=vc4-kms-v3d,cma-128\line
+\line
+[cm4]\line
+# Enable the USB2 outputs on the IO board (assuming your CM4 is plugged into\line
+# such a board)\line
+dtoverlay=dwc2,dr_mode=host\line
+\line
+[all]\line
+# Disable auto-detection (we'll configure manually)\line
+camera_auto_detect=0\line
+\line
+# Camera 1: IMX708 (Pi Camera Module 3) on CAM0 port\line
+dtoverlay=imx708,cam0\line
+\line
+# Camera 2: Arducam ToF on CAM1 port\line
+# media-controller=0 is CRITICAL for ToF to work!\line
+dtoverlay=arducam-pivariety,cam1,media-controller=0\line
+\line
+# Allocate 512MB CMA memory for camera operations\line
+dtoverlay=vc4-kms-v3d,cma-512\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Save and exit: {\f1 Ctrl+X}, then {\f1 Y}, then {\f1 Enter}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 6.5: Reboot to Apply Changes\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 sudo reboot\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 6.6: Verify Both Cameras After Reboot\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Check kernel messages:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # Check for IMX708\line
+sudo dmesg | grep imx708\line
+\line
+# Check for Arducam\line
+sudo dmesg | grep arducam\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Expected output for IMX708:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 [    X.XXXXXX] imx708 10-001a: Consider updating driver imx708\line
+[    X.XXXXXX] imx708 10-001a: sensor model id=0x708\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Expected output for Arducam:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 [    X.XXXXXX] arducam-pivariety 11-000c: firmware version: 0x10004\line
+[    X.XXXXXX] Using sensor arducam-pivariety 11-000c for capture\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 If you see both, congratulations! Both cameras are detected!\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Part 7: Testing Both Cameras\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 7.1: List All Detected Cameras\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 rpicam-hello --list-cameras\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Expected output:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Available cameras\line
+-----------------\line
+0 : imx708 [4608x2592 10-bit RGGB] (/base/axi/pcie@120000/rp1/i2c@80000/imx708@1a)\line
+    Modes: 'SRGGB10_CSI2P' : 1536x864 [120.13 fps - (768, 432)/3072x1728 crop]\line
+                             2304x1296 [56.03 fps - (0, 0)/4608x2592 crop]\line
+                             4608x2592 [14.35 fps - (0, 0)/4608x2592 crop]\line
+\line
+1 : arducam-pivariety [4656x3496] (/base/axi/pcie@120000/rp1/i2c@88000/arducam_pivariety@c)\line
+    Modes: 'SRGGB8' : 240x180 [60.00 fps - (0, 0)/240x180 crop]\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 You should see {\b two cameras listed: 0 and 1}.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 7.2: Test IMX708 Camera (Camera 0)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Show preview for 5 seconds:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 rpicam-hello --camera 0 -t 5000\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 A preview window should open showing the camera feed.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Take a photo:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 rpicam-still --camera 0 -o test_imx708.jpg\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Check the photo:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ls -lh test_imx708.jpg\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Record 10 seconds of video:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 rpicam-vid --camera 0 -t 10000 -o test_imx708.h264\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 7.3: Test Arducam ToF Camera (Camera 1)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Show preview:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 rpicam-hello --camera 1 -t 5000\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Note:} ToF camera preview will look grayscale/depth-like.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Test with Python SDK (Depth Demo):}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 cd ~/Documents/Arducam_tof_camera/example/python\line
+python3 preview_depth.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 This should open a window showing depth information with color coding.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 7.4: Using Both Cameras Simultaneously\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 You can run multiple rpicam instances:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Terminal 1:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 rpicam-hello --camera 0 -t 30000\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Terminal 2 (open new terminal):}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 rpicam-hello --camera 1 -t 30000\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Both should work at the same time!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 7.5: Troubleshooting Camera Detection\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b If camera 0 (IMX708) is not detected:}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab Check ribbon cable connection\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab Verify device tree overlay: {\f1 dtoverlay -l | grep imx708}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 3.\tx360\tab Check kernel messages: {\f1 sudo dmesg | grep imx708}\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b If camera 1 (ToF) is not detected:}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab Check ribbon cable connection\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab Verify driver loaded: {\f1 lsmod | grep arducam}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 3.\tx360\tab Check device tree overlay: {\f1 dtoverlay -l | grep arducam}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 4.\tx360\tab Verify media-controller parameter in config.txt\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b If you see \u8220"Could not open any dmaHeap device\u8221" but camera works:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 This is just a warning, ignore it! As long as images are captured, it\u8217's fine.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b If you get \u8220"dmaHeap allocation failure\u8221":}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab Verify CMA: {\f1 sudo dmesg | grep cma} (should show 512MB)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab Check permissions: {\f1 ls -l /dev/dma_heap/}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 3.\tx360\tab Verify you\u8217're in video group: {\f1 groups}\sa180\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Part 8: OpenCV Integration\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 The OpenCV Problem:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Traditional OpenCV camera access {\b DOES NOT WORK} with libcamera:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 import cv2\line
+cap = cv2.VideoCapture(0)  # \u10060 ? This fails!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Why?} OpenCV expects V4L2 devices. Raspberry Pi cameras use libcamera.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 The Solution:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Use {\f1 rpicam-vid} as a bridge between libcamera and OpenCV:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Camera \u8594 ? libcamera \u8594 ? rpicam-vid \u8594 ? MJPEG stream \u8594 ? Python \u8594 ? OpenCV\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 8.1: Install OpenCV for Python\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 pip3 install opencv-python --break-system-packages\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 8.2: Create OpenCV Camera Script\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Create a new file:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 nano ~/opencv_camera.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Paste this complete code:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 #!/usr/bin/env python3\line
+"""\line
+OpenCV Camera Interface for Raspberry Pi\line
+Uses rpicam-vid as bridge between libcamera and OpenCV\line
+"""\line
+\line
+import cv2\line
+import subprocess\line
+import numpy as np\line
+\line
+def main():\line
+    # Configuration\line
+    CAMERA_ID = 0  # 0 = IMX708, 1 = ToF\line
+    WIDTH = 640\line
+    HEIGHT = 480\line
+    FPS = 30\line
+    \line
+    # Start rpicam-vid process\line
+    cmd = [\line
+        'rpicam-vid',\line
+        '--camera', str(CAMERA_ID),\line
+        '--width', str(WIDTH),\line
+        '--height', str(HEIGHT),\line
+        '--framerate', str(FPS),\line
+        '--timeout', '0',       # Run indefinitely\line
+        '--nopreview',          # No rpicam preview window\line
+        '--codec', 'mjpeg',     # MJPEG encoding\line
+        '--output', '-'         # Output to stdout\line
+    ]\line
+    \line
+    print(f"Starting camera \{CAMERA_ID\} at \{WIDTH\}x\{HEIGHT\}@\{FPS\}fps")\line
+    print("Press 'q' to quit, 's' to save snapshot")\line
+    \line
+    # Start subprocess\line
+    process = subprocess.Popen(\line
+        cmd,\line
+        stdout=subprocess.PIPE,\line
+        stderr=subprocess.DEVNULL,\line
+        bufsize=10**8\line
+    )\line
+    \line
+    buffer = b''\line
+    frame_count = 0\line
+    \line
+    try:\line
+        while True:\line
+            # Read data chunk\line
+            chunk = process.stdout.read(4096)\line
+            if not chunk:\line
+                print("Stream ended")\line
+                break\line
+            \line
+            buffer += chunk\line
+            \line
+            # Find JPEG frame boundaries\line
+            start = buffer.find(b'\\xff\\xd8')  # JPEG start marker\line
+            end = buffer.find(b'\\xff\\xd9')    # JPEG end marker\line
+            \line
+            if start != -1 and end != -1 and end > start:\line
+                # Extract complete JPEG frame\line
+                jpg = buffer[start:end+2]\line
+                buffer = buffer[end+2:]  # Remove processed frame\line
+                \line
+                # Decode JPEG to numpy array (OpenCV format)\line
+                frame = cv2.imdecode(\line
+                    np.frombuffer(jpg, dtype=np.uint8),\line
+                    cv2.IMREAD_COLOR\line
+                )\line
+                \line
+                if frame is not None:\line
+                    frame_count += 1\line
+                    \line
+                    # Add frame counter overlay\line
+                    cv2.putText(\line
+                        frame,\line
+                        f"Frame: \{frame_count\}",\line
+                        (10, 30),\line
+                        cv2.FONT_HERSHEY_SIMPLEX,\line
+                        1,\line
+                        (0, 255, 0),\line
+                        2\line
+                    )\line
+                    \line
+                    # Display frame\line
+                    cv2.imshow("Camera Feed", frame)\line
+                    \line
+                    # Handle keypresses\line
+                    key = cv2.waitKey(1) & 0xFF\line
+                    \line
+                    if key == ord('q'):\line
+                        print("Quit requested")\line
+                        break\line
+                    elif key == ord('s'):\line
+                        filename = f"snapshot_\{frame_count\}.jpg"\line
+                        cv2.imwrite(filename, frame)\line
+                        print(f"Saved \{filename\}")\line
+    \line
+    except KeyboardInterrupt:\line
+        print("\\nInterrupted by user")\line
+    \line
+    finally:\line
+        # Cleanup\line
+        process.terminate()\line
+        process.wait()\line
+        cv2.destroyAllWindows()\line
+        print(f"Camera stopped. Total frames: \{frame_count\}")\line
+\line
+if __name__ == "__main__":\line
+    main()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Save and exit: {\f1 Ctrl+X}, then {\f1 Y}, then {\f1 Enter}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Make it executable:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 chmod +x ~/opencv_camera.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 8.3: Test OpenCV Integration\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Run the script:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 python3 ~/opencv_camera.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b You should see:} - Window titled \u8220"Camera Feed\u8221" - Live video from IMX708 camera - Frame counter in top-left corner - Press \u8216'q\u8217' to quit - Press \u8216's\u8217' to save snapshot\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 8.4: Create OpenCV Script for ToF Camera\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 For the ToF camera (camera 1):\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 cp ~/opencv_camera.py ~/opencv_tof.py\line
+nano ~/opencv_tof.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Change line:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 CAMERA_ID = 0  # Change to: CAMERA_ID = 1\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Save and test:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 python3 ~/opencv_tof.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 8.5: Understanding the Code\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Key parts explained:}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab {\b subprocess.Popen()} - Starts rpicam-vid as separate process\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab {\b MJPEG codec} - Each frame is a complete JPEG image\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 3.\tx360\tab {\b JPEG markers} - {\f1 0xFFD8} = start, {\f1 0xFFD9} = end\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 4.\tx360\tab {\b Buffer management} - Accumulate data until complete frame found\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 5.\tx360\tab {\b cv2.imdecode()} - Convert JPEG bytes to OpenCV frame\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 6.\tx360\tab {\b cv2.imshow()} - Display frame in window\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Data flow:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 rpicam-vid \u8594 ? stdout pipe \u8594 ? Python buffer \u8594 ? JPEG detection \u8594 ? \line
+cv2.imdecode \u8594 ? numpy array \u8594 ? cv2.imshow \u8594 ? display\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Part 9: Object Detection with YOLOv8\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 What is YOLO?\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 YOLO (You Only Look Once) is a real-time object detection AI model that can detect 80 different objects:\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab People, animals (cat, dog, bird, horse, etc.)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Vehicles (car, bus, truck, bicycle, motorcycle, etc.)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab Objects (bottle, cup, laptop, phone, book, etc.)\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 \bullet \tx360\tab And many more!\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 9.1: Install YOLOv8\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 pip3 install ultralytics --break-system-packages\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 This will also install PyTorch and other dependencies. Takes a few minutes.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 9.2: Create Object Detection Script\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 nano ~/object_detection.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Paste this complete code:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 #!/usr/bin/env python3\line
+"""\line
+YOLOv8 Object Detection with Raspberry Pi Camera\line
+Real-time object detection using rpicam-vid + OpenCV + YOLOv8\line
+"""\line
+\line
+import cv2\line
+import subprocess\line
+import numpy as np\line
+from ultralytics import YOLO\line
+import time\line
+\line
+def main():\line
+    # Configuration\line
+    CAMERA_ID = 0  # 0 = IMX708, 1 = ToF\line
+    WIDTH = 640    # Lower resolution = faster processing\line
+    HEIGHT = 480\line
+    FPS = 30\line
+    CONFIDENCE_THRESHOLD = 0.5  # Minimum confidence for detections\line
+    \line
+    # Load YOLO model\line
+    print("Loading YOLOv8 model...")\line
+    model = YOLO('yolov8n.pt')  # 'n' = nano (smallest/fastest)\line
+    # Other options: yolov8s.pt (small), yolov8m.pt (medium), yolov8l.pt (large)\line
+    print("Model loaded successfully!")\line
+    \line
+    # Start rpicam-vid process\line
+    cmd = [\line
+        'rpicam-vid',\line
+        '--camera', str(CAMERA_ID),\line
+        '--width', str(WIDTH),\line
+        '--height', str(HEIGHT),\line
+        '--framerate', str(FPS),\line
+        '--timeout', '0',\line
+        '--nopreview',\line
+        '--codec', 'mjpeg',\line
+        '--output', '-'\line
+    ]\line
+    \line
+    print(f"Starting camera \{CAMERA_ID\}")\line
+    print("Press 'q' to quit")\line
+    print(f"Detecting objects with confidence > \{CONFIDENCE_THRESHOLD\}")\line
+    \line
+    process = subprocess.Popen(\line
+        cmd,\line
+        stdout=subprocess.PIPE,\line
+        stderr=subprocess.DEVNULL,\line
+        bufsize=10**8\line
+    )\line
+    \line
+    buffer = b''\line
+    frame_count = 0\line
+    fps_counter = 0\line
+    fps_start_time = time.time()\line
+    current_fps = 0\line
+    \line
+    try:\line
+        while True:\line
+            chunk = process.stdout.read(4096)\line
+            if not chunk:\line
+                break\line
+            \line
+            buffer += chunk\line
+            \line
+            # Find JPEG boundaries\line
+            start = buffer.find(b'\\xff\\xd8')\line
+            end = buffer.find(b'\\xff\\xd9')\line
+            \line
+            if start != -1 and end != -1 and end > start:\line
+                jpg = buffer[start:end+2]\line
+                buffer = buffer[end+2:]\line
+                \line
+                frame = cv2.imdecode(\line
+                    np.frombuffer(jpg, dtype=np.uint8),\line
+                    cv2.IMREAD_COLOR\line
+                )\line
+                \line
+                if frame is not None:\line
+                    frame_count += 1\line
+                    fps_counter += 1\line
+                    \line
+                    # Calculate FPS every second\line
+                    if time.time() - fps_start_time >= 1.0:\line
+                        current_fps = fps_counter\line
+                        fps_counter = 0\line
+                        fps_start_time = time.time()\line
+                    \line
+                    # Run YOLO detection\line
+                    results = model(frame, verbose=False, conf=CONFIDENCE_THRESHOLD)\line
+                    \line
+                    # Draw detections on frame\line
+                    annotated_frame = results[0].plot()\line
+                    \line
+                    # Add FPS counter\line
+                    cv2.putText(\line
+                        annotated_frame,\line
+                        f"FPS: \{current_fps\}",\line
+                        (10, 30),\line
+                        cv2.FONT_HERSHEY_SIMPLEX,\line
+                        1,\line
+                        (0, 255, 0),\line
+                        2\line
+                    )\line
+                    \line
+                    # Print detections to console\line
+                    for result in results:\line
+                        boxes = result.boxes\line
+                        for box in boxes:\line
+                            class_id = int(box.cls[0])\line
+                            confidence = float(box.conf[0])\line
+                            class_name = model.names[class_id]\line
+                            print(f"Detected: \{class_name\} (\{confidence:.2f\})")\line
+                    \line
+                    # Display\line
+                    cv2.imshow("Object Detection", annotated_frame)\line
+                    \line
+                    if cv2.waitKey(1) & 0xFF == ord('q'):\line
+                        break\line
+    \line
+    except KeyboardInterrupt:\line
+        print("\\nInterrupted by user")\line
+    \line
+    finally:\line
+        process.terminate()\line
+        process.wait()\line
+        cv2.destroyAllWindows()\line
+        print(f"Detection stopped. Total frames processed: \{frame_count\}")\line
+\line
+if __name__ == "__main__":\line
+    main()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Save and exit.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Make executable:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 chmod +x ~/object_detection.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 9.3: Run Object Detection\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 python3 ~/object_detection.py\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b First run will:} 1. Download the YOLOv8n model (~6MB) 2. Start camera 3. Begin detecting objects\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Point the camera at objects} and watch it detect: - People - Bottles, cups, laptops - Cats, dogs, birds - Cars, bicycles - And much more!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Step 9.4: Understanding Performance\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b You\u8217'll notice the detection is slow} (3-5 FPS instead of 30 FPS).\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Why?} - YOLO runs on CPU (Pi 5 doesn\u8217't have GPU/NPU for AI) - Processing each 640x480 frame takes ~200-300ms - This is normal for CPU-based detection!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b The FPS you see:} - Camera captures at 30 FPS - YOLO processes at 3-5 FPS - Display shows processed frames only\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Part 10: Performance Optimization\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Option 1: Lower Resolution\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Edit {\f1 object_detection.py}:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 WIDTH = 320   # Change from 640\line
+HEIGHT = 240  # Change from 480\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Result:} ~2x faster (6-10 FPS)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Option 2: Process Every Nth Frame\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Add frame skipping to the script:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # Add after frame_count += 1\line
+if frame_count % 3 != 0:  # Process every 3rd frame\line
+    continue\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Result:} 3x faster apparent FPS, but detections update slower\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Option 3: Use Smaller Model\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Already using {\f1 yolov8n.pt} (nano - smallest). Can\u8217't go smaller while keeping YOLO!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Alternative: Use simpler detection methods like Haar Cascades for face detection (much faster).\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Option 4: Region of Interest (ROI)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Only run detection on part of frame:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # Crop to center 50%\line
+h, w = frame.shape[:2]\line
+roi = frame[h//4:3*h//4, w//4:3*w//4]\line
+results = model(roi, verbose=False)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Result:} 4x faster, but only detects in center\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Option 5: External Hardware Accelerator\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 For production applications: - {\b Coral USB Accelerator} (~$60) - 10-30x faster - {\b Hailo AI Kit} - NPU for Pi 5 - Requires different model formats (TensorFlow Lite, ONNX)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Recommended Settings for Balance:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 WIDTH = 416       # Sweet spot for YOLO\line
+HEIGHT = 416\line
+CONFIDENCE_THRESHOLD = 0.6  # Fewer false positives\line
+# Process every 2nd frame\line
+if frame_count % 2 != 0:\line
+    continue\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Troubleshooting Guide\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Camera Not Detected\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Symptom:} {\f1 rpicam-hello --list-cameras} shows \u8220"No cameras available\u8221"\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Solutions:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 1.\tx360\tab {\b Check physical connection:}\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Power off completely\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Reseat ribbon cables\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Check blue side orientation\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Power on\sa180\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 2.\tx360\tab {\b Verify device tree overlays:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 dtoverlay -l\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 Should show {\f1 imx708} and {\f1 arducam-pivariety}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 3.\tx360\tab {\b Check kernel messages:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 sudo dmesg | grep -i camera\line
+sudo dmesg | grep imx708\line
+sudo dmesg | grep arducam\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 4.\tx360\tab {\b Verify config.txt:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 cat /boot/firmware/config.txt | grep dtoverlay\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 Should show both camera overlays\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 5.\tx360\tab {\b Try one camera at a time:}\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Comment out one dtoverlay in config.txt\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Reboot and test\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Helps isolate which camera has issues\sa180\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 DMA Heap Allocation Failures\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Symptom:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 dmaHeap allocation failure\line
+ERROR: *** failed to allocate capture buffers for stream ***\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Solutions:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 1.\tx360\tab {\b Check CMA memory:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 sudo dmesg | grep cma\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 Should show 512 MiB reserved\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 2.\tx360\tab {\b Increase CMA if needed:} Edit {\f1 /boot/firmware/config.txt}:\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 dtoverlay=vc4-kms-v3d,cma-768  # Increase to 768MB\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 3.\tx360\tab {\b Check DMA heap permissions:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 ls -l /dev/dma_heap/\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 Should show {\f1 crw-rw----} with {\f1 video} group\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 4.\tx360\tab {\b Verify video group membership:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 groups\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 Must include {\f1 video}. If not:\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 sudo usermod -a -G video $USER\line
+# Then log out and back in\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 ToF Camera \u8220"ArducamSystemError\u8221"\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Symptom:} {\f1 Failed to open camera. Error code: TofErrorCode.ArducamSystemError}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Solutions:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 1.\tx360\tab {\b Verify media-controller parameter:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 grep arducam-pivariety /boot/firmware/config.txt\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 Must include: {\f1 dtoverlay=arducam-pivariety,cam1,media-controller=0}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 2.\tx360\tab {\b Check driver loaded:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 lsmod | grep arducam\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 Should show {\f1 arducam_pivariety} module\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 3.\tx360\tab {\b Verify firmware detected:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 sudo dmesg | grep "firmware version"\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 Should show ToF firmware version\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 4.\tx360\tab {\b Try with sudo (test only):}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 sudo python3 preview_depth.py\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 If works with sudo, it\u8217's a permissions issue\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 OpenCV Shows Black Screen\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Symptom:} Window opens but shows black screen\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Solutions:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 1.\tx360\tab {\b Test rpicam-vid directly:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 rpicam-vid --camera 0 -t 5000 -o test.h264\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 If this fails, camera itself has issues\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 2.\tx360\tab {\b Check codec:} Try {\f1 yuv420} instead of {\f1 mjpeg} in script:\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 '--codec', 'yuv420',\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 3.\tx360\tab {\b Increase buffer size:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 bufsize=10**9  # Increase from 10**8\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 4.\tx360\tab {\b Add debug output:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 print(f"Frame size: \{len(frame)\}")\line
+print(f"Frame shape: \{frame.shape\}")\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 YOLOv8 Too Slow\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Symptom:} Detection runs at <3 FPS\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b This is normal on CPU!} See {\field{\*\fldinst{HYPERLINK "#part-10-performance-optimization"}}{\fldrslt{\ul
+Part 10: Performance Optimization
+}}}
+ for solutions.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 Quick fixes: - Lower resolution to 320x240 - Process every 3rd frame - Use ROI (region of interest) - Consider hardware accelerator\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Python Module Not Found\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Symptom:} {\f1 ModuleNotFoundError: No module named 'ArducamDepthCamera'}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Solutions:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 1.\tx360\tab {\b Reinstall SDK:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 sudo pip3 install arducamdepthcamera --break-system-packages\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 2.\tx360\tab {\b Check installation:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 pip3 list | grep arducam\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 3.\tx360\tab {\b Check import name:}\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Package: {\f1 arducamdepthcamera} (lowercase)\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Import: {\f1 ArducamDepthCamera} (capitals matter!)\sa180\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Permission Denied Errors\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Symptom:} {\f1 Permission denied} when accessing camera\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Solutions:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 1.\tx360\tab {\b Add to video group:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 sudo usermod -a -G video $USER\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 2.\tx360\tab {\b Log out and back in} (group changes need fresh login)\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 3.\tx360\tab {\b Check device permissions:}\par}
+{\pard \ql \f0 \sa180 \li360 \fi0 \f1 ls -l /dev/video*\line
+ls -l /dev/dma_heap/\par}
+{\pard \ql \f0 \sa180 \li360 \fi-360 4.\tx360\tab {\b Reboot} (ensures all changes applied)\sa180\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Understanding the Concepts\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 1. Device Tree Overlays\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b What they are:} - Text files describing hardware to Linux kernel - Tell kernel \u8220"this hardware exists at this location\u8221" - Required because CSI cameras aren\u8217't auto-detectable like USB\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b How they work:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Hardware \u8594 ? Device Tree Overlay \u8594 ? Kernel Driver \u8594 ? libcamera \u8594 ? Application\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Example:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 dtoverlay=imx708,cam0\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 This tells kernel: - There\u8217's an IMX708 sensor - Connected to CAM0 port - Load appropriate driver\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 2. libcamera Architecture\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b What is libcamera:} - Modern camera framework for Linux - Replaces old V4L2 approach - Supports complex camera systems\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Pipeline concept:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Sensor \u8594 ? CSI \u8594 ? ISP \u8594 ? Memory \u8594 ? Application\line
+   \u8595 ?      \u8595 ?     \u8595 ?      \u8595 ?         \u8595 ?\line
+  IMX708  RP1  PiSP  DMA    rpicam-apps\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Why Raspberry Pi fork:} - Upstream libcamera = generic, no Pi support - Raspberry Pi fork = adds Pi-specific pipelines - Pipeline handlers for RP1 chip (Pi 5) and ISP\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 3. DMA and Memory Management\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b DMA (Direct Memory Access):}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Without DMA:          With DMA:\line
+Camera \u8594 ? CPU \u8594 ? RAM    Camera \u8594 ? RAM (direct)\line
+  (slow, CPU busy)      (fast, CPU free)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b CMA (Contiguous Memory Allocator):} - Video frames need continuous memory blocks - Can\u8217't be fragmented across multiple locations - Must reserve at boot time - Our setting: 512MB reserved\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Why allocation fails without CMA:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Normal memory: [A][B][C][D][E]  \u8592 ? Fragmented\line
+CMA memory:    [AAAAA]           \u8592 ? Continuous block for camera\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 4. OpenCV Bridge Architecture\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Why direct access fails:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 OpenCV \u8594 ? V4L2 (/dev/video0) \u10007 ? \u8594 ? libcamera camera \u8592 ? Wrong interface!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Our solution:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Camera \u8594 ? libcamera \u8594 ? rpicam-vid \u8594 ? MJPEG stream \u8594 ? Python buffer \u8594 ?\line
+  \u8594 ? JPEG decode \u8594 ? OpenCV frame \u8594 ? cv2.imshow()\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b MJPEG encoding:} - Each frame = complete JPEG image - Easy to find boundaries (0xFFD8\u8230 ?0xFFD9) - Good compression - Decodable by OpenCV\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Alternative (YUV):} - Raw uncompressed frames - Faster (no JPEG encode/decode) - More CPU for large resolutions - More complex to handle\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 5. Dual Camera System\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b How Pi 5 handles two cameras:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 \u9484 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9488 ?\line
+\u9474 ?   Raspberry Pi 5 \u9474 ?\line
+\u9474 ?                  \u9474 ?\line
+\u9474 ?  \u9484 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9488 ?         \u9474 ?\line
+\u9474 ?  \u9474 ? RP1 \u9474 ?         \u9474 ?\line
+\u9474 ?  \u9492 ?\u9472 ?\u9516 ?\u9472 ?\u9516 ?\u9472 ?\u9496 ?         \u9474 ?\line
+\u9474 ?    \u9474 ? \u9474 ?           \u9474 ?\line
+\u9474 ?  CAM0 CAM1       \u9474 ?\line
+\u9474 ?    \u9474 ?   \u9474 ?         \u9474 ?\line
+\u9492 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9532 ?\u9472 ?\u9472 ?\u9472 ?\u9532 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9472 ?\u9496 ?\line
+     \u9474 ?   \u9474 ?\line
+   IMX708 ToF\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b RP1 chip:} - Manages both CSI lanes - Dual Image Signal Processors (ISPs) - Can process both cameras simultaneously - Limited only by memory bandwidth\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Camera numbering:} - Camera 0 = First in config.txt (our IMX708) - Camera 1 = Second in config.txt (our ToF) - Can swap by changing order\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 6. Object Detection Pipeline\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b YOLO processing flow:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Camera frame (640x480 RGB)\line
+    \u8595 ?\line
+Resize to 416x416\line
+    \u8595 ?\line
+Normalize pixel values\line
+    \u8595 ?\line
+Feed to neural network\line
+    \u8595 ?\line
+Neural network processes (~200ms)\line
+    \u8595 ?\line
+Output: [class, confidence, bbox] for each detection\line
+    \u8595 ?\line
+Draw boxes on frame\line
+    \u8595 ?\line
+Display\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Why it\u8217's slow:} - Neural network has ~7 million parameters - Each pixel processed multiple times - Raspberry Pi 5 CPU: ~2 GFLOPS - Modern GPU: ~10,000 GFLOPS - 5000x slower than GPU!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b 80 object classes YOLO can detect:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 People & Animals:\line
+- person, cat, dog, horse, sheep, cow, elephant, bear, zebra, giraffe\line
+\line
+Vehicles:\line
+- bicycle, car, motorcycle, airplane, bus, train, truck, boat\line
+\line
+Outdoor Objects:\line
+- traffic light, fire hydrant, stop sign, parking meter, bench\line
+\line
+Sports:\line
+- frisbee, skis, snowboard, sports ball, kite, baseball bat, baseball glove,\line
+  skateboard, surfboard, tennis racket\line
+\line
+Kitchen:\line
+- bottle, wine glass, cup, fork, knife, spoon, bowl\line
+\line
+Food:\line
+- banana, apple, sandwich, orange, broccoli, carrot, hot dog, pizza, donut, cake\line
+\line
+Furniture:\line
+- chair, couch, potted plant, bed, dining table, toilet\line
+\line
+Electronics:\line
+- tv, laptop, mouse, remote, keyboard, cell phone\line
+\line
+Appliances:\line
+- microwave, oven, toaster, sink, refrigerator\line
+\line
+Indoor:\line
+- book, clock, vase, scissors, teddy bear, hair drier, toothbrush\line
+\line
+And more...\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 7. Image Processing Algorithms (IPA)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b What IPAs do:}\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 1.\tx360\tab {\b Auto Exposure:}\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Measures scene brightness\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Adjusts sensor exposure time\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Prevents over/under exposure\sa180\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 2.\tx360\tab {\b Auto White Balance:}\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Identifies white objects\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Adjusts color temperature\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Makes whites look white\sa180\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 3.\tx360\tab {\b Auto Focus (if supported):}\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Measures contrast\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Adjusts lens position\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Maximizes sharpness\sa180\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 4.\tx360\tab {\b Lens Shading Correction:}\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Compensates for lens vignetting\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Brightens corners\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Even illumination\sa180\par}
+{\pard \ql \f0 \sa0 \li360 \fi-360 5.\tx360\tab {\b Denoise:}\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Reduces image noise\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Especially in low light\par}
+{\pard \ql \f0 \sa0 \li720 \fi-360 \endash \tx360\tab Preserves details\sa180\sa180\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Why they need Pi-specific code:} - Each sensor has different characteristics - ISP has specific features - Tuning files contain calibration data - Located in: {\f1 /usr/local/share/libcamera/ipa/rpi/pisp/}\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Quick Reference\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Essential Commands\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Camera Testing:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # List cameras\line
+rpicam-hello --list-cameras\line
+\line
+# Preview camera 0\line
+rpicam-hello --camera 0 -t 5000\line
+\line
+# Take photo\line
+rpicam-still --camera 0 -o photo.jpg\line
+\line
+# Record 10s video\line
+rpicam-vid --camera 0 -t 10000 -o video.h264\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b System Checks:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # Check CMA memory\line
+sudo dmesg | grep cma\line
+\line
+# Check video group\line
+groups\line
+\line
+# Check DMA heap permissions\line
+ls -l /dev/dma_heap/\line
+\line
+# Camera detection\line
+sudo dmesg | grep imx708\line
+sudo dmesg | grep arducam\line
+\line
+# List video devices\line
+v4l2-ctl --list-devices\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b After Configuration Changes:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # After editing config.txt\line
+sudo reboot\line
+\line
+# After editing udev rules\line
+sudo udevadm control --reload-rules\line
+sudo udevadm trigger\line
+\line
+# After group changes\line
+# Log out and back in, or:\line
+sudo reboot\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Rebuild Software:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # Rebuild libcamera\line
+cd ~/libcamera\line
+ninja -C build\line
+sudo ninja -C build install\line
+sudo ldconfig\line
+\line
+# Rebuild rpicam-apps\line
+cd ~/rpicam-apps\line
+ninja -C build\line
+sudo ninja -C build install\line
+sudo ldconfig\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 File Locations\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Configuration Files:} - {\f1 /boot/firmware/config.txt} - Boot configuration - {\f1 /etc/udev/rules.d/99-dma-heap.rules} - DMA permissions\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Source Code:} - {\f1 ~/libcamera/} - libcamera source - {\f1 ~/rpicam-apps/} - Camera apps source\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Installed Locations:} - {\f1 /usr/local/bin/rpicam-*} - Camera binaries - {\f1 /usr/local/lib/libcamera*.so} - libcamera libraries - {\f1 /usr/local/share/libcamera/ipa/} - IPA modules & tuning files\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Device Nodes:} - {\f1 /dev/video*} - Video devices - {\f1 /dev/media*} - Media controller devices - {\f1 /dev/dma_heap/} - DMA heap devices\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Python Scripts Location\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 ~/opencv_camera.py          - Basic OpenCV integration\line
+~/opencv_tof.py             - OpenCV with ToF camera\line
+~/object_detection.py       - YOLOv8 detection\line
+~/Documents/Arducam_tof_camera/example/python/  - ToF examples\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Important Variables\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Camera IDs:} - {\f1 --camera 0} = IMX708 (first in config.txt) - {\f1 --camera 1} = Arducam ToF (second in config.txt)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Common Resolutions:} - IMX708: 4608x2592 (12MP max), 2304x1296, 1536x864 - Arducam ToF: 240x180 (depth)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Model Files:} - {\f1 yolov8n.pt} - Nano (smallest/fastest) - {\f1 yolov8s.pt} - Small - {\f1 yolov8m.pt} - Medium - {\f1 yolov8l.pt} - Large - {\f1 yolov8x.pt} - Extra large (slowest/most accurate)\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Appendix\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 A. Complete config.txt Reference\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 See {\field{\*\fldinst{HYPERLINK "#part-6-dual-camera-configuration"}}{\fldrslt{\ul
+Part 6: Dual Camera Configuration
+}}}
+ for annotated version.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 B. Camera Specifications\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b IMX708 (Pi Camera Module 3):} - Sensor: Sony IMX708 - Resolution: 11.9 MP (4608 x 2592) - Pixel size: 1.4 \u956 ?m - Auto-focus: Yes (motorized) - Interface: 2-lane or 4-lane MIPI CSI-2 - Frame rates: - 4608x2592: 14 fps - 2304x1296: 56 fps - 1536x864: 120 fps\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Arducam ToF Camera:} - Sensor: ToF depth sensor - Resolution: 240x180 (depth map) - Range: 0.2m to 4m (model dependent) - Frame rate: Up to 60 fps - Output: Depth + amplitude data - Interface: MIPI CSI-2\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 C. Useful Links\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Official Documentation:} - Raspberry Pi Cameras: https://www.raspberrypi.com/documentation/accessories/camera.html - libcamera: https://libcamera.org/ - rpicam-apps: https://github.com/raspberrypi/rpicam-apps\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Source Repositories:} - Raspberry Pi libcamera: https://github.com/raspberrypi/libcamera - Raspberry Pi rpicam-apps: https://github.com/raspberrypi/rpicam-apps - Arducam ToF: https://github.com/ArduCAM/Arducam_tof_camera - Arducam Pivariety: https://github.com/ArduCAM/Arducam-Pivariety-V4L2-Driver\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b AI/ML Resources:} - Ultralytics YOLOv8: https://docs.ultralytics.com/ - OpenCV: https://docs.opencv.org/ - PyTorch: https://pytorch.org/\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Community:} - Raspberry Pi Forums: https://forums.raspberrypi.com/ - Ubuntu for Raspberry Pi: https://ubuntu.com/raspberry-pi\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 D. Performance Benchmarks\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Raspberry Pi 5 Specs:} - CPU: 4x Cortex-A76 @ 2.4 GHz - RAM: 4GB or 8GB LPDDR4X - GPU: VideoCore VII - No NPU (Neural Processing Unit)\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Expected Performance:} - libcamera preview: 30-60 fps (full resolution) - OpenCV basic: 30 fps @ 640x480 - YOLOv8n detection: 3-5 fps @ 640x480 - YOLOv8n detection: 6-10 fps @ 320x240\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Comparison:} - Raspberry Pi 4: ~50% slower - With Coral TPU: ~100 fps detection - Desktop GPU: ~300+ fps detection\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 E. Troubleshooting Flowchart\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 Camera not working?\line
+    \u9500 ?\u9472 ? No cameras listed in rpicam-hello --list-cameras\line
+    \u9474 ?   \u9500 ?\u9472 ? Check physical connections\line
+    \u9474 ?   \u9500 ?\u9472 ? Verify config.txt dtoverlays\line
+    \u9474 ?   \u9500 ?\u9472 ? Check dmesg for errors\line
+    \u9474 ?   \u9492 ?\u9472 ? Try one camera at a time\line
+    \u9474 ?\line
+    \u9500 ?\u9472 ? Camera listed but "dmaHeap allocation failure"\line
+    \u9474 ?   \u9500 ?\u9472 ? Check CMA memory (sudo dmesg | grep cma)\line
+    \u9474 ?   \u9500 ?\u9472 ? Verify DMA heap permissions\line
+    \u9474 ?   \u9500 ?\u9472 ? Confirm video group membership\line
+    \u9474 ?   \u9492 ?\u9472 ? Increase CMA to 768MB if needed\line
+    \u9474 ?\line
+    \u9500 ?\u9472 ? ToF "ArducamSystemError"\line
+    \u9474 ?   \u9500 ?\u9472 ? Verify media-controller=0 in config.txt\line
+    \u9474 ?   \u9500 ?\u9472 ? Check driver: lsmod | grep arducam\line
+    \u9474 ?   \u9500 ?\u9472 ? Test with sudo (permission test)\line
+    \u9474 ?   \u9492 ?\u9472 ? Reinstall SDK\line
+    \u9474 ?\line
+    \u9492 ?\u9472 ? OpenCV shows black screen\line
+        \u9500 ?\u9472 ? Test rpicam-vid directly\line
+        \u9500 ?\u9472 ? Try different codec (yuv420)\line
+        \u9500 ?\u9472 ? Increase buffer size\line
+        \u9492 ?\u9472 ? Add debug prints\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 F. Common Error Messages Explained\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b \u8220"Could not open any dmaHeap device\u8221"} - {\b Severity:} Warning (usually harmless) - {\b Cause:} Can\u8217't access /dev/dma_heap/ for optimization - {\b Fix:} If camera works, ignore. Otherwise check permissions.\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b \u8220"dmaHeap allocation failure\u8221"} - {\b Severity:} Error (camera won\u8217't work) - {\b Cause:} Not enough contiguous memory - {\b Fix:} Increase CMA memory allocation\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b \u8220"Failed to create DRM object for plane 0\u8221"} - {\b Severity:} Warning - {\b Cause:} Display rendering issue - {\b Fix:} Run with \u8211-nopreview or ignore if not using preview\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b \u8220"mmal: No data received from sensor\u8221"} - {\b Severity:} Error - {\b Cause:} Camera not responding - {\b Fix:} Check ribbon cable, power cycle\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b \u8220"ERROR: }* failed to allocate capture buffers for stream *{\b \u8220"} - {\b Severity:} Error - {\b Cause:} Memory allocation failed - {\b Fix:} Check CMA, DMA heap permissions, reboot\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 G. Next Steps for Advanced Users\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Performance Optimization:} 1. Compile with -O3 optimization flags 2. Use TensorRT for YOLO inference 3. Implement multi-threading 4. Use hardware H.264 encoding\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b ROS 2 Integration:} 1. Install ROS 2 Humble on Ubuntu 22.04 2. Use image_tools or camera_ros package 3. Publish camera/image_raw topic 4. Subscribe with cv_bridge\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Advanced Camera Features:} 1. HDR (High Dynamic Range) 2. Raw image capture (DNG format) 3. Custom ISP tuning 4. Multi-camera synchronization\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Machine Learning:} 1. Train custom YOLO models 2. Implement tracking (DeepSORT) 3. Semantic segmentation 4. Optical flow\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel1 \b \fs32 Final Notes\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 What You\u8217've Accomplished:\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \u9989 ? {\b Full understanding} of why Pi cameras don\u8217't work on Ubuntu\line \u9989 ? {\b Built custom libcamera} from source with Pi drivers\line \u9989 ? {\b Configured dual camera system} working simultaneously\line \u9989 ? {\b Fixed all permission and memory issues}\line \u9989 ? {\b OpenCV integration} working perfectly\line \u9989 ? {\b Real-time object detection} with YOLOv8\line \u9989 ? {\b Complete documentation} for future reference\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Time Investment Worth It?\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Absolutely!} You now have: - Knowledge that applies to any embedded Linux system - Skills in building software from source - Understanding of camera systems and drivers - Working robotics vision platform - Foundation for ROS 2 integration\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Backup Your Work!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Save these files:} - {\f1 /boot/firmware/config.txt} - {\f1 /etc/udev/rules.d/99-dma-heap.rules} - Your Python scripts - This documentation!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Make an SD card image backup:}\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \f1 # On another Linux machine with SD card reader:\line
+sudo dd if=/dev/sdX of=pi5_ubuntu_camera_backup.img bs=4M status=progress\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 \outlinelevel2 \b \fs28 Share Your Knowledge!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 If this guide helped you, consider: - Sharing with the Raspberry Pi community - Contributing improvements - Helping others on forums - Writing about your projects!\par}
+{\pard \qc \f0 \sa180 \li0 \fi0 \emdash\emdash\emdash\emdash\emdash\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Last Updated:} March 2026\line {\b Tested On:} Raspberry Pi 5 (8GB), Ubuntu 22.04 LTS\line {\b Total Setup Time:} ~3 hours\line {\b Cameras Working:} IMX708 + Arducam ToF\line {\b Status:} Fully Operational \u9989 ?\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Questions? Issues?} Review the troubleshooting section first!\par}
+{\pard \ql \f0 \sa180 \li0 \fi0 {\b Happy building! \u55356 ?\u57225 ?\u55358 ?\u56598 ?\u55357 ?\u56567 ?}\par}

@@ -1,0 +1,136 @@
+So far, you've completed:
+
+✅ 1. ToF camera driver
+Arducam publishes PointCloud2.
+✅ 2. Point cloud → LaserScan conversion
+pointcloud_to_laserscan is working.
+You verified /scan is publishing.
+✅ 3. Reactive navigation algorithm
+
+Your node:
+
+subscribes to /scan
+preprocesses the scan
+finds the nearest obstacle
+creates a safety bubble
+finds the largest free gap
+selects a target
+computes a Twist
+publishes /cmd_vel
+
+This is the robot's local navigation brain.
+
+What still needs to be done
+Step 1 — Test the algorithm
+
+Before connecting motors, verify the node works.
+
+Run:
+
+ros2 topic echo /cmd_vel
+
+Move an obstacle in front of the camera.
+
+You should see linear.x and angular.z changing.
+
+If this doesn't happen, fix it before moving on.
+
+Step 2 — Convert /cmd_vel to motor commands
+
+This is the next major component.
+
+The node will:
+
+Twist
+
+↓
+
+Left wheel speed
+
+Right wheel speed
+
+↓
+
+Serial
+
+↓
+
+Arduino
+
+It converts navigation commands into your Arduino serial protocol.
+
+Step 3 — Arduino executes motor commands
+
+Your Arduino already drives the motors.
+
+It only needs to receive the wheel speeds.
+
+Step 4 — Tune parameters
+
+You'll likely adjust:
+
+bubble radius
+max speed
+min speed
+steering gain
+smoothing
+
+until the robot drives smoothly.
+
+Step 5 — Recovery behavior
+
+If every direction is blocked:
+
+████████
+██Robot██
+████████
+
+The robot should:
+
+stop,
+rotate,
+search for an opening,
+continue.
+Step 6 — Add robot behaviors
+
+For example:
+
+Explore
+
+↓
+
+Obstacle?
+
+↓
+
+Avoid
+
+↓
+
+Continue
+
+↓
+
+Battery low?
+
+↓
+
+Return home
+
+These become higher-level behaviors layered on top of navigation.
+
+Future improvements
+
+Once the basic system works, we can make it much smarter:
+
+Dynamic safety bubble
+Speed based on obstacle distance
+Better target selection
+Steering smoothing
+Detect dead ends
+Corridor following
+Memory of recently visited areas
+Visual target following
+Person detection
+Voice-command navigation
+Object recognition

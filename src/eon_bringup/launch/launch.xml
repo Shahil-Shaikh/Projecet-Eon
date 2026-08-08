@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="arducam_rclpy_tof_pointcloud" exec="tof_pointcloud" output="screen" />
+
+  <node pkg="pointcloud_to_laserscan" exec="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan" output="screen"
+        args="--ros-args -r cloud_in:=/point_cloud -r scan:=/scan -p queue_size:=10" />
+
+  <node pkg="eon_navigation" exec="reactive_gap_follow" output="screen" />
+</launch>

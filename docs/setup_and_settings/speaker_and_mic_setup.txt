@@ -1,0 +1,24 @@
+For Speaker:
+setting speacker to 200%:
+$pactl set-sink-volume alsa_output.platform-soc_sound.stereo-fallback 131072
+
+Making this setting permanent:
+$# Save current PipeWire volume state permanently
+pactl set-sink-volume alsa_output.platform-soc_sound.stereo-fallback 131072
+
+# Make it persist via PipeWire config
+mkdir -p ~/.config/pipewire/pipewire.conf.d
+cat > ~/.config/pipewire/pipewire.conf.d/default-sink.conf << 'EOF'
+context.properties = {
+    default.configured.audio.sink = "alsa_output.platform-soc_sound.stereo-fallback"
+    default.configured.audio.sink.volume = 2.0
+}
+EOF
+
+# Restart PipeWire to apply
+systemctl --user restart pipewire pipewire-pulse
+
+
+
+
+For Mix:
